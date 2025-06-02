@@ -7,154 +7,111 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Column(
+      body: SingleChildScrollView( // <-- Solución al overflow
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40.0),
+          child: Column(
             children: [
-              Expanded(
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 500,
-                  child: Stack(
+              // Logo o imagen superior
+              SizedBox(
+                height: 200,
+                child: Image.asset("assets/images/logo_app.png"),
+              ),
+              const SizedBox(height: 40),
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color.fromRGBO(0, 0, 0, 0.2),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(30.0),
+                  child: Column(
                     children: [
-                      Positioned.fill(
-                        child: Image.asset(
-                          "assets/images/fondo_login.png",
-                          fit: BoxFit.cover,
-                          height: 500,
+                      TextField(
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(Icons.person),
+                          hintText: "email",
+                          border: OutlineInputBorder(),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: AppColors.primary),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(
+                              color: Color.fromRGBO(0, 0, 0, 0.2),
+                            ),
+                          ),
                         ),
+                      ),
+                      SizedBox(height: 20),
+                      TextField(
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(Icons.password),
+                          hintText: "Password",
+                          border: OutlineInputBorder(),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: AppColors.primary),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(
+                              color: Color.fromRGBO(0, 0, 0, 0.2),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: () {},
+                          style: ButtonStyle(
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            backgroundColor: WidgetStateProperty.all(
+                              AppColors.primary,
+                            ),
+                          ),
+                          child: Text(
+                            "Iniciar sesión",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text("No tengo una cuenta, "),
+                          Text(
+                            "Registrarme",
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
-              SizedBox(height: 400),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 255),
-            child: Row(
-              children: [
-                Spacer(),
-                Container(
-                  width: 237,
-                  height: 179,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
-                    image: DecorationImage(
-                      image: AssetImage("assets/images/logo_app.png"),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                Spacer(),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 434, left: 20, right: 20),
-            child: Column(
-              children: [
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color.fromRGBO(0, 0, 0, 0.2),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(30.0),
-                    child: Column(
-                      children: [
-                        TextField(
-                          decoration: InputDecoration(
-                            prefixIcon: Icon(Icons.person),
-                            hintText: "email",
-                            border: OutlineInputBorder(),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: AppColors.primary),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              borderSide: BorderSide(
-                                color: Color.fromRGBO(0, 0, 0, 0.2),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        TextField(
-                          obscureText: true,
-                          decoration: InputDecoration(
-                            prefixIcon: Icon(Icons.password),
-                            hintText: "Password",
-                            border: OutlineInputBorder(),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: AppColors.primary),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              borderSide: BorderSide(
-                                color: Color.fromRGBO(0, 0, 0, 0.2),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ButtonStyle(
-                              shape: WidgetStateProperty.all(
-                                RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              backgroundColor: WidgetStateProperty.all(
-                                AppColors.primary,
-                              ),
-                            ),
-                            child: Text(
-                              "Iniciar sesión",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text("No tengo una cuenta, "),
-                              Text(
-                                "Registrarme",
-                                style: TextStyle(color: Colors.blue),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

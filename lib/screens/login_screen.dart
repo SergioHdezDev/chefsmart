@@ -1,5 +1,6 @@
-import 'package:chefsmart/core/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:chefsmart/core/app_colors.dart';
+import 'package:chefsmart/screens/register_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -111,9 +112,22 @@ class LoginScreen extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text("No tengo una cuenta, "),
-                                  Text(
-                                    "Registrarme",
-                                    style: TextStyle(color: Colors.blue),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const RegisterScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: Text(
+                                      "Registrarme",
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),

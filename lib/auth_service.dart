@@ -12,7 +12,7 @@ class AuthService {
       );
       return result.user;
     } catch (e) {
-      throw e; // Esto asegura que la excepción llegue a la UI
+      rethrow; // Esto asegura que la excepción llegue a la UI
     }
   }
 

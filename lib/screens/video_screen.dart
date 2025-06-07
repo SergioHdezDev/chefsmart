@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 class VideoScreen extends StatelessWidget {
   const VideoScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Videos destacados
     final featuredVideos = [
       {
         'title': 'SANCOCHO DE GALLINA',
@@ -18,10 +17,8 @@ class VideoScreen extends StatelessWidget {
         'thumbnail': 'https://img.youtube.com/vi/LJbhZs8PR2E/0.jpg',
         'url': 'https://www.youtube.com/watch?v=LJbhZs8PR2E'
       },
-
     ];
 
-    // Otros videotutoriales
     final otherVideos = [
       {
         'title': 'EMPANADAS VALLUNAS',
@@ -41,7 +38,6 @@ class VideoScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Sección de videos destacados
             const Padding(
               padding: EdgeInsets.all(16.0),
               child: Text(
@@ -56,9 +52,9 @@ class VideoScreen extends StatelessWidget {
                 itemCount: featuredVideos.length,
                 itemBuilder: (context, index) {
                   final video = featuredVideos[index];
+                  final videoId = YoutubePlayerController.convertUrlToId(video['url']!);
                   return GestureDetector(
                     onTap: () {
-                      final videoId = YoutubePlayer.convertUrlToId(video['url']!);
                       if (videoId != null) {
                         Navigator.push(
                           context,
@@ -97,7 +93,6 @@ class VideoScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            // Subtítulo de otros videotutoriales
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
@@ -111,6 +106,7 @@ class VideoScreen extends StatelessWidget {
               itemCount: otherVideos.length,
               itemBuilder: (context, index) {
                 final video = otherVideos[index];
+                final videoId = YoutubePlayerController.convertUrlToId(video['url']!);
                 return Card(
                   margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: ListTile(
@@ -118,7 +114,6 @@ class VideoScreen extends StatelessWidget {
                     title: Text(video['title']!),
                     trailing: const Icon(Icons.play_circle_fill),
                     onTap: () {
-                      final videoId = YoutubePlayer.convertUrlToId(video['url']!);
                       if (videoId != null) {
                         Navigator.push(
                           context,
@@ -152,30 +147,31 @@ class _YoutubePlayerScreenState extends State<YoutubePlayerScreen> {
   late YoutubePlayerController _controller;
 
   @override
+  @override
   void initState() {
     super.initState();
-    _controller = YoutubePlayerController(
-      initialVideoId: widget.videoId,
-      flags: const YoutubePlayerFlags(
-        autoPlay: true,
-        mute: false,
-      ),
-    );
+    _controller = YoutubePlayerController.fromVideoId(
+      videoId: widget.videoId,
+      autoPlay: true,
+    );  
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Reproduciendo video')),
-      body: YoutubePlayer(
-        controller: _controller,
-        showVideoProgressIndicator: true,
+    return YoutubePlayerControllerProvider(
+      controller: _controller,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Reproduciendo video')),
+        body: YoutubePlayer(
+          controller: _controller,
+          aspectRatio: 16 / 9,
+        ),
       ),
     );
   }

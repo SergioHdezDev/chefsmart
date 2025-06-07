@@ -12,7 +12,7 @@ dependencies:
   firebase_core: ^2.18.0
   cloud_firestore: ^4.13.0
   firebase_auth: ^4.18.1
-  youtube_player_flutter: ^9.0.4
+  youtube_player_iframe: ^4.0.4
 
 dev_dependencies:
   flutter_test:

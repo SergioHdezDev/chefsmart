@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "507811465735",
+    "project_id": "chefsmart-c74ad",
+    "storage_bucket": "chefsmart-c74ad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:507811465735:android:c4b3a08a2a9ddfef16f8a2",
+        "android_client_info": {
+          "package_name": "com.example.chefsmart"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDG7sPGdAK1ptkvZfEQpq3o-SubqVwvvj4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

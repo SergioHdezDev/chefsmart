@@ -1,9 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:chefsmart/core/app_colors.dart';
 import 'package:chefsmart/screens/register_screen.dart';
+import 'package:chefsmart/auth_service.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final AuthService _auth = AuthService();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  Future<void> _loginUser(BuildContext context) async {
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor completa todos los campos'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final user = await _auth.signInWithEmail(email, password);
+      if (user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Login exitoso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Aquí puedes navegar a la pantalla principal
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Usuario o contraseña incorrectos'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al iniciar sesión: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +109,7 @@ class LoginScreen extends StatelessWidget {
                           child: Column(
                             children: [
                               TextField(
+                                controller: emailController,
                                 decoration: InputDecoration(
                                   prefixIcon: Icon(Icons.person),
                                   hintText: "email",
@@ -68,6 +128,7 @@ class LoginScreen extends StatelessWidget {
                               ),
                               SizedBox(height: 20),
                               TextField(
+                                controller: passwordController,
                                 obscureText: true,
                                 decoration: InputDecoration(
                                   prefixIcon: Icon(Icons.password),
@@ -90,7 +151,7 @@ class LoginScreen extends StatelessWidget {
                                 width: double.infinity,
                                 height: 50,
                                 child: ElevatedButton(
-                                  onPressed: () {},
+                                  onPressed: () => _loginUser(context),
                                   style: ButtonStyle(
                                     shape: WidgetStateProperty.all(
                                       RoundedRectangleBorder(
@@ -117,7 +178,7 @@ class LoginScreen extends StatelessWidget {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => const RegisterScreen(),
+                                          builder: (context) =>  RegisterScreen(),
                                         ),
                                       );
                                     },

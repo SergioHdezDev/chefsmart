@@ -146,7 +146,7 @@ class YoutubePlayerScreen extends StatefulWidget {
 class _YoutubePlayerScreenState extends State<YoutubePlayerScreen> {
   late YoutubePlayerController _controller;
 
-  @override
+
   @override
   void initState() {
     super.initState();
@@ -158,21 +158,21 @@ class _YoutubePlayerScreenState extends State<YoutubePlayerScreen> {
 
   @override
   void dispose() {
-    _controller.close();
+    // _controller.close(); // Prueba comentando esta línea
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return YoutubePlayerControllerProvider(
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Reproduciendo video'),
+    ),
+    body: YoutubePlayer(
       controller: _controller,
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Reproduciendo video')),
-        body: YoutubePlayer(
-          controller: _controller,
-          aspectRatio: 16 / 9,
-        ),
-      ),
-    );
-  }
+      aspectRatio: 16 / 9,
+    ),
+  );
+}
 }

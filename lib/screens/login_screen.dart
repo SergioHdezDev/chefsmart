@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:chefsmart/core/app_colors.dart';
 import 'package:chefsmart/screens/register_screen.dart';
 import 'package:chefsmart/auth_service.dart';
+import 'package:chefsmart/screens/main_tabs_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,7 +39,11 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        // Aquí puedes navegar a la pantalla principal
+        // Redirige y reemplaza la pantalla de login
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainTabsScreen()),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

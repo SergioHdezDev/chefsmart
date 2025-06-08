@@ -1,3 +1,4 @@
+import 'package:chefsmart/screens/recetas_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:chefsmart/core/app_colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,7 +17,7 @@ class _MainTabsScreenState extends State<MainTabsScreen> {
 
   final List<Widget> _screens = [
     Center(child: Text('Home')),
-    Center(child: Text('Recetas')),
+    RecetasScreen(),
     Center(child: Text('Búsqueda')),
     VideoScreen(),
   ];

@@ -27,6 +27,14 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/images/fondo_home.jpg
+    - assets/images/caribe.jpg
+    - assets/images/andina.jpg
+    - assets/images/orinoquia.jpg
+    - assets/images/amazonia.jpg
+    - assets/images/insular.jpg
+    - assets/images/pacifica.jpg
+
 
 flutter_launcher_icons:
   android: true

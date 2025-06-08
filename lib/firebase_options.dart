@@ -30,10 +30,7 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -72,4 +69,15 @@ class DefaultFirebaseOptions {
     storageBucket: 'chefsmart-c74ad.firebasestorage.app',
     iosBundleId: 'com.example.chefsmart',
   );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDHtXYLI1XFGWBcoO3K-BS4G5MInQQTwE8',
+    appId: '1:507811465735:web:4348caa4bcb5c86616f8a2',
+    messagingSenderId: '507811465735',
+    projectId: 'chefsmart-c74ad',
+    authDomain: 'chefsmart-c74ad.firebaseapp.com',
+    storageBucket: 'chefsmart-c74ad.firebasestorage.app',
+    measurementId: 'G-H54LSGDXN0',
+  );
+
 }

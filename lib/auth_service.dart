@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:logger/logger.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final Logger _logger = Logger();
 
   // Registro con email y contraseña
   Future<User?> signUpWithEmail(String email, String password) async {
@@ -25,7 +27,7 @@ class AuthService {
       );
       return result.user;
     } catch (e) {
-      print("Error al iniciar sesión: $e");
+      _logger.e('Error al iniciar sesión: $e');
       return null;
     }
   }

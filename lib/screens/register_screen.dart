@@ -1,8 +1,7 @@
-import 'package:chefsmart/auth_service.dart';
-import 'package:chefsmart/firestore_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:chefsmart/core/app_colors.dart';
+import 'package:chefsmart/auth_service.dart';
+import 'package:chefsmart/screens/login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -13,63 +12,51 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final AuthService _auth = AuthService();
-  final FirestoreService _firestore = FirestoreService();
-  final nameController = TextEditingController();
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
-  Future<void> _registerUser(BuildContext context, String email, String password, String name) async {
-    try {
-      User? user = await _auth.signUpWithEmail(email, password);
+  Future<void> _registerUser() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text;
 
-      if (!mounted) return;
-
-      if (user != null) {
-        await _firestore.saveUserData(user.uid, {
-          'email': email,
-          'name': name,
-        });
-
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registro exitoso!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        if (!mounted) return;
-        Navigator.pop(context);
-      }
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-      String errorMessage;
-      switch (e.code) {
-        case 'email-already-in-use':
-          errorMessage = 'El correo ya está registrado';
-          break;
-        case 'weak-password':
-          errorMessage = 'La contraseña es muy débil';
-          break;
-        case 'invalid-email':
-          errorMessage = 'Correo electrónico inválido';
-          break;
-        default:
-          errorMessage = 'Error en el registro: ${e.message}';
-      }
-
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
+        const SnackBar(
+          content: Text('Por favor completa todos los campos'),
           backgroundColor: Colors.red,
         ),
       );
+      return;
+    }
+
+    try {
+      final user = await _auth.signUpWithEmail(email, password);
+      if (!mounted) return;
+      if (user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Registro exitoso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo registrar el usuario'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error desconocido: $e'),
+          content: Text('Error al registrar: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -78,134 +65,157 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
-    confirmPasswordController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Login',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              "assets/images/fondo_login.png",
+              fit: BoxFit.cover,
             ),
-            const SizedBox(width: 8),
-            const Text(
-              'Registro',
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+          ),
+          SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height,
               ),
-            ),
-          ],
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.person),
-                hintText: "Ingresa tu nombre",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.email),
-                hintText: "Ingresa tu email",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.lock),
-                hintText: "Crea Contraseña",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: confirmPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.lock_outline),
-                hintText: "Confirmar contraseña",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  final name = nameController.text.trim();
-                  final email = emailController.text.trim();
-                  final password = passwordController.text;
-                  final confirmPassword = confirmPasswordController.text;
-
-                  if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Por favor completa todos los campos'),
-                        backgroundColor: Colors.red,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 40.0,
+                  ),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: 200,
+                        child: Image.asset("assets/images/logo_app.png"),
                       ),
-                    );
-                    return;
-                  }
-
-                  if (password != confirmPassword) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Las contraseñas no coinciden'),
-                        backgroundColor: Colors.red,
+                      const SizedBox(height: 40),
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color.fromRGBO(0, 0, 0, 0.2),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(30.0),
+                          child: Column(
+                            children: [
+                              TextField(
+                                controller: emailController,
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(Icons.person),
+                                  hintText: "email",
+                                  border: OutlineInputBorder(),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: AppColors.primary,
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    borderSide: BorderSide(
+                                      color: Color.fromRGBO(0, 0, 0, 0.2),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 20),
+                              TextField(
+                                controller: passwordController,
+                                obscureText: true,
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(Icons.password),
+                                  hintText: "Password",
+                                  border: OutlineInputBorder(),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: AppColors.primary,
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    borderSide: BorderSide(
+                                      color: Color.fromRGBO(0, 0, 0, 0.2),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton(
+                                  onPressed: _registerUser,
+                                  style: ButtonStyle(
+                                    shape: WidgetStateProperty.all(
+                                      RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    backgroundColor: WidgetStateProperty.all(
+                                      AppColors.primary,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    "Registrarme",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text("¿Ya tienes una cuenta? "),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => LoginScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: Text(
+                                      "Iniciar sesión",
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    );
-                    return;
-                  }
-
-                  _registerUser(context, email, password, name);
-                },
-                style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.all(AppColors.primary),
-                ),
-                child: const Text(
-                  "Registrarme",
-                  style: TextStyle(color: Colors.white),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

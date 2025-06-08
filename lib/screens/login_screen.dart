@@ -16,7 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  Future<void> _loginUser(BuildContext context) async {
+  Future<void> _loginUser() async {
     final email = emailController.text.trim();
     final password = passwordController.text;
 
@@ -32,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final user = await _auth.signInWithEmail(email, password);
+      if (!mounted) return;
       if (user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -39,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        // Redirige y reemplaza la pantalla de login
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainTabsScreen()),
@@ -53,6 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al iniciar sesión: $e'),
@@ -87,7 +89,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 40.0,
+                  ),
                   child: Column(
                     children: [
                       SizedBox(
@@ -120,7 +125,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   hintText: "email",
                                   border: OutlineInputBorder(),
                                   focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: AppColors.primary),
+                                    borderSide: BorderSide(
+                                      color: AppColors.primary,
+                                    ),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   enabledBorder: OutlineInputBorder(
@@ -140,7 +147,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   hintText: "Password",
                                   border: OutlineInputBorder(),
                                   focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(color: AppColors.primary),
+                                    borderSide: BorderSide(
+                                      color: AppColors.primary,
+                                    ),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   enabledBorder: OutlineInputBorder(
@@ -156,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 width: double.infinity,
                                 height: 50,
                                 child: ElevatedButton(
-                                  onPressed: () => _loginUser(context),
+                                  onPressed: _loginUser,
                                   style: ButtonStyle(
                                     shape: WidgetStateProperty.all(
                                       RoundedRectangleBorder(
@@ -183,7 +192,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) =>  RegisterScreen(),
+                                          builder:
+                                              (context) => RegisterScreen(),
                                         ),
                                       );
                                     },

@@ -7,14 +7,9 @@ import 'package:chefsmart/screens/recetas_screen.dart'; // Importa la pantalla d
 // 'assets/images/andina.jpg'
 // ... y las demás imágenes de categorías
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
@@ -65,8 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.3),
-                          Colors.black.withOpacity(0.0),
+                          Colors.black.withValues(alpha: 0.3 * 255),
+                          Colors.black.withValues(alpha: 0.0),
                         ],
                       ),
                     ),
@@ -194,11 +189,11 @@ class CategoryCard extends StatefulWidget {
   final VoidCallback onTap;
 
   const CategoryCard({
-    Key? key,
+    super.key,
     required this.name,
     required this.imagePath,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<CategoryCard> createState() => _CategoryCardState();

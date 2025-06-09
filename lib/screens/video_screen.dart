@@ -1,12 +1,14 @@
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chefsmart/core/app_colors.dart';
+import 'package:flutter/foundation.dart';
 
 class VideoScreen extends StatelessWidget {
-  const VideoScreen({super.key});
+  const VideoScreen({super.key, this.url});
+
+  final String? url;
 
   Future<List<Map<String, dynamic>>> fetchVideos(String collection) async {
     final snapshot = await FirebaseFirestore.instance.collection(collection).get();
@@ -145,22 +147,31 @@ class YoutubePlayerScreen extends StatefulWidget {
 }
 
 class _YoutubePlayerScreenState extends State<YoutubePlayerScreen> {
-  late YoutubePlayerController _controller;
+  YoutubePlayerController? _controller;
+  bool _initialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    if (!Platform.isWindows) {
-      _controller = YoutubePlayerController.fromVideoId(
-        videoId: widget.videoId,
-        autoPlay: true,
-      );
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      final platform = Theme.of(context).platform;
+      // Solo inicializa el controlador en Android/iOS
+      if (!kIsWeb && platform != TargetPlatform.windows) {
+        _controller = YoutubePlayerController.fromVideoId(
+          videoId: widget.videoId,
+          autoPlay: true,
+        );
+      }
+      _initialized = true;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (Platform.isWindows) {
+    final platform = Theme.of(context).platform;
+
+    // SOLO Windows abre navegador externo
+    if (!kIsWeb && platform == TargetPlatform.windows) {
       return Scaffold(
         appBar: AppBar(title: const Text('Reproduciendo video')),
         body: Center(
@@ -182,6 +193,11 @@ class _YoutubePlayerScreenState extends State<YoutubePlayerScreen> {
               final url = 'https://www.youtube.com/watch?v=${widget.videoId}';
               if (await canLaunchUrl(Uri.parse(url))) {
                 await launchUrl(Uri.parse(url));
+              } else {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No se pudo abrir el video')),
+                );
               }
             },
             child: const Text('Abrir en el navegador'),
@@ -189,14 +205,24 @@ class _YoutubePlayerScreenState extends State<YoutubePlayerScreen> {
         ),
       );
     }
+
+    // Web, Android, iOS: reproductor embebido
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reproduciendo video'),
-      ),
-      body: YoutubePlayer(
-        controller: _controller,
-        aspectRatio: 16 / 9,
-      ),
+      appBar: AppBar(title: const Text('Reproduciendo video')),
+      body: kIsWeb
+          ? YoutubePlayer(
+              controller: YoutubePlayerController.fromVideoId(
+                videoId: widget.videoId,
+                autoPlay: true,
+              ),
+              aspectRatio: 16 / 9,
+            )
+          : (_controller != null
+              ? YoutubePlayer(
+                  controller: _controller!,
+                  aspectRatio: 16 / 9,
+                )
+              : const Center(child: CircularProgressIndicator())),
     );
   }
 }

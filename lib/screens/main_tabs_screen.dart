@@ -19,10 +19,10 @@ class _MainTabsScreenState extends State<MainTabsScreen> {
 
   // Lista de las pantallas que corresponden a cada pestaña del BottomNavigationBar
   final List<Widget> _screens = [
-    const HomeScreen(), // ¡¡¡AHORA USA TU HOMESCREEN REAL!!!
+    const HomeScreen(),
     const RecetasScreen(),
     const SearchScreen(),
-    const VideoScreen(),
+    const VideoScreen(url: ''), // <-- Cambia esto
     // Para la pestaña de Logout, no es una "pantalla" en sí,
     // sino una acción. Mantener un placeholder aquí es válido si la
     // acción de logout se maneja en _onItemTapped.

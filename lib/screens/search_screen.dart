@@ -13,16 +13,24 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _regionController = TextEditingController();
   List<String> _availableIngredients = [];
-  List<String> _selectedIngredients = [];
+  final List<String> _selectedIngredients = [];
   String? _selectedIngredient;
   List<String> _missingIngredients = [];
   String _recetaEncontrada = "";
+  bool _isLoading = true; // <-- Añadido
 
   @override
   void initState() {
     super.initState();
-    _loadIngredients();
-    _loadRecetas();
+    _loadAll();
+  }
+
+  Future<void> _loadAll() async {
+    await _loadIngredients();
+    await _loadRecetas();
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   // 🔄 **Carga ingredientes desde Firebase**
@@ -41,12 +49,12 @@ class _SearchScreenState extends State<SearchScreen> {
         await FirebaseFirestore.instance.collection('recetas').get();
     if (snapshot.docs.isNotEmpty) {
       for (var doc in snapshot.docs) {
-        print(
+        debugPrint(
           "Receta encontrada: ${doc['titulo']} - Ingredientes: ${doc['ingredientes']}",
         );
       }
     } else {
-      print("No se encontraron recetas en Firebase.");
+      debugPrint("No se encontraron recetas en Firebase.");
     }
   }
 
@@ -86,7 +94,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _recetaEncontrada = recetaEncontrada;
     });
 
-    print(
+    debugPrint(
       _recetaEncontrada.isNotEmpty
           ? "Receta encontrada: $_recetaEncontrada"
           : "No se encontró una receta.",
@@ -95,6 +103,11 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text("Buscar Recetas"),

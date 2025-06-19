@@ -171,25 +171,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 email: _emailController.text.trim(),
                                 password: _passwordController.text,
                               );
+                              if (!mounted) return;
+
                               // 2. Guardar datos en Firestore
                               await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).set({
                                 'name': _nameController.text.trim(),
                                 'email': _emailController.text.trim(),
                               });
+                              if (!mounted) return;
 
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              // Mostrar mensaje de éxito
+                              ScaffoldMessenger.of(this.context).showSnackBar(
                                 const SnackBar(
                                   content: Text('¡Registro exitoso! Ahora puedes iniciar sesión.'),
                                   backgroundColor: Colors.green,
                                 ),
                               );
                               await Future.delayed(const Duration(seconds: 1));
+                              if (!mounted) return;
                               Navigator.pushReplacement(
-                                context,
+                                this.context,
                                 MaterialPageRoute(builder: (context) => const LoginScreen()),
                               );
                             } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(this.context).showSnackBar(
                                 SnackBar(
                                   content: Text('Error al registrar: $e'),
                                   backgroundColor: Colors.red,

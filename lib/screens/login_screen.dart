@@ -3,6 +3,7 @@ import 'package:chefsmart/core/app_colors.dart';
 import 'package:chefsmart/screens/register_screen.dart';
 import 'package:chefsmart/auth_service.dart';
 import 'package:chefsmart/screens/main_tabs_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _auth = AuthService();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  bool _isLoading = false;
 
   Future<void> _loginUser() async {
     final email = emailController.text.trim();
@@ -30,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    setState(() => _isLoading = true);
     try {
       final user = await _auth.signInWithEmail(email, password);
       if (!mounted) return;
@@ -53,14 +56,18 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.message}')),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al iniciar sesión: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error inesperado: $e')),
       );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -176,10 +183,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                       AppColors.primary,
                                     ),
                                   ),
-                                  child: Text(
-                                    "Iniciar sesión",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
+                                  child: _isLoading
+                                      ? CircularProgressIndicator(
+                                          color: Colors.white,
+                                        )
+                                      : Text(
+                                          "Iniciar sesión",
+                                          style: TextStyle(color: Colors.white),
+                                        ),
                                 ),
                               ),
                               SizedBox(height: 20),

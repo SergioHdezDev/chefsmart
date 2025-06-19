@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 class RecetaDetailResponse {
   final String id;
   final List<String> clasificacionOrigen;

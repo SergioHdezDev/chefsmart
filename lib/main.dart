@@ -1,10 +1,23 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:chefsmart/screens/login_screen.dart';
 import 'package:chefsmart/screens/home_screen.dart';
+import 'package:chefsmart/firestore_service.dart'; // ✅ Importamos FirestoreService
+import 'package:chefsmart/firestore_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ Inicializa Firebase antes de ejecutar otras funciones
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // ✅ Actualizar enlaces de video antes de iniciar la app
+  await FirestoreService().actualizarVideos();
+
   runApp(const MainApp());
 }
 
@@ -12,8 +25,7 @@ class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
   Future<FirebaseApp> _initFirebase() async {
-    // Inicializa Firebase solo si la plataforma es soportada
-    return await Firebase.initializeApp(
+    return Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
   }
@@ -21,34 +33,38 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false, // ✅ Oculta el banner de depuración
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ), // ✅ Personaliza el tema de la app
       home: FutureBuilder(
         future: _initFirebase(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            // Loader mientras inicializa Firebase
             return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
+              body: Center(
+                child: CircularProgressIndicator(),
+              ), // ✅ Loader mientras inicializa Firebase
             );
           } else if (snapshot.hasError) {
-            // Muestra error si falla la inicialización
             return Scaffold(
               body: Center(
                 child: Text(
                   'Error al inicializar Firebase:\n${snapshot.error}',
                   textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.red,
+                  ), // ✅ Muestra error si falla la inicialización
                 ),
               ),
             );
           } else {
-            // Si todo va bien, muestra la pantalla de login
-            return const LoginScreen();
+            return const LoginScreen(); // ✅ Muestra la pantalla de login al iniciar
           }
         },
       ),
-      routes: {
-        '/home': (context) => const HomeScreen(),
-        // ... otras rutas si tienes
-      },
+      routes: {'/home': (context) => const HomeScreen()},
     );
   }
 }

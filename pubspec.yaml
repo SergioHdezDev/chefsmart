@@ -13,9 +13,10 @@ dependencies:
   cloud_firestore: ^5.6.8
   firebase_auth: ^5.5.4
   youtube_player_iframe: ^5.2.1
+  youtube_player_flutter: ^9.1.1
   logger: ^2.0.2
   webview_flutter: ^4.7.1
-  url_launcher: ^6.2.5
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
@@ -34,7 +35,6 @@ flutter:
     - assets/images/amazonia.jpg
     - assets/images/insular.jpg
     - assets/images/pacifica.jpg
-
 
 flutter_launcher_icons:
   android: true

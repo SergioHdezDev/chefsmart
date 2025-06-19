@@ -1,6 +1,7 @@
+// Importaciones necesarias
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:chefsmart/core/app_colors.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -10,146 +11,185 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _regionController = TextEditingController();
+  List<String> _availableRecipes = [];
+  List<String> _availableRegions = [];
   List<String> _availableIngredients = [];
-  final List<String> _selectedIngredients = [];
+  List<String> _selectedIngredients = [];
+  String? _selectedRecipe;
+  String? _selectedRegion;
   String? _selectedIngredient;
-  List<String> _missingIngredients = [];
-  String _recetaEncontrada = "";
-  bool _isLoading = true; // <-- Añadido
+  List<Map<String, dynamic>> _recetasEncontradas = [];
+  Map<String, dynamic>? _recetaSeleccionada;
+  YoutubePlayerController? _videoController;
 
   @override
   void initState() {
     super.initState();
-    _loadAll();
+    _loadData();
   }
 
-  Future<void> _loadAll() async {
-    await _loadIngredients();
-    await _loadRecetas();
-    setState(() {
-      _isLoading = false;
-    });
+  Future<void> _loadData() async {
+    await Future.wait([_loadRecipes(), _loadRegions(), _loadIngredients()]);
   }
 
-  // 🔄 **Carga ingredientes desde Firebase**
-  Future<void> _loadIngredients() async {
-    final snapshot =
-        await FirebaseFirestore.instance.collection('ingredientes').get();
-    setState(() {
-      _availableIngredients =
-          snapshot.docs.map((doc) => doc['nombre'].toString()).toList();
-    });
-  }
-
-  // 🔄 **Carga recetas desde Firebase**
-  Future<void> _loadRecetas() async {
+  Future<void> _loadRecipes() async {
     final snapshot =
         await FirebaseFirestore.instance.collection('recetas').get();
-    if (snapshot.docs.isNotEmpty) {
-      for (var doc in snapshot.docs) {
-        debugPrint(
-          "Receta encontrada: ${doc['titulo']} - Ingredientes: ${doc['ingredientes']}",
-        );
-      }
-    } else {
-      debugPrint("No se encontraron recetas en Firebase.");
-    }
+    setState(() {
+      _availableRecipes =
+          snapshot.docs.map((doc) => doc['titulo'].toString()).toList();
+    });
   }
 
-  // 🔍 **Compara ingredientes con recetas en Firebase**
-  Future<void> _searchMissingIngredients() async {
+  Future<void> _loadRegions() async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('recetas').get();
+    Set<String> regionSet = {};
+    for (var doc in snapshot.docs) {
+      var data = doc.data();
+      if (data.containsKey("region") && data["region"] is String) {
+        regionSet.add(data["region"]);
+      }
+    }
+    setState(() {
+      _availableRegions = regionSet.toList();
+    });
+  }
+
+  Future<void> _loadIngredients() async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('recetas').get();
+    Set<String> ingredientsSet = {};
+    for (var doc in snapshot.docs) {
+      if (doc["ingredientes"] is List) {
+        ingredientsSet.addAll(List<String>.from(doc['ingredientes']));
+      }
+    }
+    setState(() {
+      _availableIngredients = ingredientsSet.toList();
+    });
+  }
+
+  Future<void> _searchMatchingRecipes() async {
     if (_selectedIngredients.isEmpty) return;
 
     final snapshot =
-        await FirebaseFirestore.instance.collection('recetas').get();
-    List<String> ingredientesFaltantes = [];
-    String recetaEncontrada = "";
+        await FirebaseFirestore.instance
+            .collection('recetas')
+            .where("ingredientes", arrayContainsAny: _selectedIngredients)
+            .get();
+
+    List<Map<String, dynamic>> resultados = [];
 
     for (var doc in snapshot.docs) {
-      if (doc.data().containsKey('ingredientes')) {
-        List<String> ingredientesReceta = List<String>.from(
-          doc['ingredientes'],
-        );
+      var data = doc.data();
+      List<String> ingredientes =
+          data["ingredientes"] is List
+              ? List<String>.from(data["ingredientes"])
+              : [];
 
-        int coincidencias =
-            ingredientesReceta
-                .where((i) => _selectedIngredients.contains(i))
-                .length;
-
-        if (coincidencias > 0) {
-          ingredientesFaltantes =
-              ingredientesReceta
-                  .where((i) => !_selectedIngredients.contains(i))
-                  .toList();
-          recetaEncontrada = doc['titulo'];
-          break;
-        }
-      }
+      resultados.add({
+        "titulo": data["titulo"] ?? "Sin título",
+        "video": data["video"] ?? "",
+        "ingredientes": ingredientes,
+        "faltantes":
+            ingredientes
+                .where((i) => !_selectedIngredients.contains(i))
+                .toList(),
+      });
     }
 
     setState(() {
-      _missingIngredients = ingredientesFaltantes;
-      _recetaEncontrada = recetaEncontrada;
+      _recetasEncontradas = resultados;
+      _recetaSeleccionada = null;
+      _videoController?.close();
+      _videoController = null;
     });
-
-    debugPrint(
-      _recetaEncontrada.isNotEmpty
-          ? "Receta encontrada: $_recetaEncontrada"
-          : "No se encontró una receta.",
-    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+  Future<void> _fetchRecipesByRegion(String region) async {
+    final snapshot =
+        await FirebaseFirestore.instance
+            .collection('recetas')
+            .where("region", isEqualTo: region)
+            .get();
+
+    List<Map<String, dynamic>> resultados = [];
+
+    for (var doc in snapshot.docs) {
+      var data = doc.data();
+      List<String> ingredientes =
+          data["ingredientes"] is List
+              ? List<String>.from(data["ingredientes"])
+              : [];
+
+      resultados.add({
+        "titulo": data["titulo"] ?? "Sin título",
+        "video": data["video"] ?? "",
+        "ingredientes": ingredientes,
+        "faltantes":
+            ingredientes
+                .where((i) => !_selectedIngredients.contains(i))
+                .toList(),
+      });
     }
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Buscar Recetas"),
-        backgroundColor: AppColors.primary,
-      ),
-      backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildSearchField(
-              "Título",
-              "Ejemplo: Arepas",
-              _titleController,
-              Icons.fastfood,
-            ),
-            const SizedBox(height: 16),
-            _buildSearchField(
-              "Región",
-              "Ejemplo: Antioquia",
-              _regionController,
-              Icons.location_on,
-            ),
-            const SizedBox(height: 16),
-            _buildIngredientSelector(),
-            const SizedBox(height: 16),
-            _buildSelectedIngredients(),
-            const SizedBox(height: 16),
-            _buildSearchButton(),
-            _buildMissingIngredients(),
-          ],
-        ),
-      ),
-    );
+
+    setState(() {
+      _recetasEncontradas = resultados;
+      _recetaSeleccionada = null;
+      _videoController?.close();
+      _videoController = null;
+    });
   }
 
-  // ✅ **Campo de búsqueda**
-  Widget _buildSearchField(
+  Future<void> _fetchRecipeDetails(String recipeTitle) async {
+    final snapshot =
+        await FirebaseFirestore.instance
+            .collection('recetas')
+            .where("titulo", isEqualTo: recipeTitle)
+            .get();
+
+    if (snapshot.docs.isNotEmpty) {
+      var data = snapshot.docs.first.data();
+      List<String> ingredientes =
+          data["ingredientes"] is List
+              ? List<String>.from(data["ingredientes"])
+              : [];
+
+      setState(() {
+        _recetaSeleccionada = {
+          "titulo": data["titulo"] ?? "Sin título",
+          "video": data["video"] ?? "",
+          "ingredientes": ingredientes,
+          "faltantes":
+              ingredientes
+                  .where((i) => !_selectedIngredients.contains(i))
+                  .toList(),
+        };
+        _recetasEncontradas = [];
+        _initializeVideoPlayer(_recetaSeleccionada!["video"]);
+      });
+    }
+  }
+
+  void _initializeVideoPlayer(String videoUrl) {
+    if (videoUrl.isEmpty) return;
+    final videoId = YoutubePlayerController.convertUrlToId(videoUrl);
+    if (videoId != null) {
+      _videoController = YoutubePlayerController.fromVideoId(
+        videoId: videoId,
+        autoPlay: false,
+        params: const YoutubePlayerParams(showFullscreenButton: true),
+      );
+      setState(() {});
+    }
+  }
+
+  Widget _buildDropdown(
     String label,
-    String hint,
-    TextEditingController controller,
-    IconData icon,
+    List<String> items,
+    String? selectedItem,
+    Function(String?) onChanged,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,139 +198,250 @@ class _SearchScreenState extends State<SearchScreen> {
           label,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: hint,
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(icon),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ✅ **Selector de ingredientes**
-  Widget _buildIngredientSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Selecciona un ingrediente",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _selectedIngredient,
+          value: selectedItem,
           items:
-              _availableIngredients
-                  .where(
-                    (ingredient) => !_selectedIngredients.contains(ingredient),
-                  )
+              items
                   .map(
-                    (ingredient) => DropdownMenuItem(
-                      value: ingredient,
-                      child: Text(ingredient),
-                    ),
+                    (item) => DropdownMenuItem(value: item, child: Text(item)),
                   )
                   .toList(),
-          onChanged: (value) {
-            setState(() => _selectedIngredient = value);
-          },
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-        ),
-        const SizedBox(height: 12),
-        ElevatedButton(
-          onPressed: () {
-            if (_selectedIngredient != null &&
-                !_selectedIngredients.contains(_selectedIngredient)) {
-              setState(() {
-                _selectedIngredients.add(_selectedIngredient!);
-                _selectedIngredient = null;
-              });
-            }
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-          child: const Text(
-            "Agregar Ingrediente",
-            style: TextStyle(color: Colors.white),
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
           ),
         ),
       ],
     );
   }
 
-  // ✅ **Lista de ingredientes seleccionados**
-  Widget _buildSelectedIngredients() {
+  Widget _buildSelectedIngredientsChips() {
+    return Wrap(
+      spacing: 8,
+      children:
+          _selectedIngredients
+              .map(
+                (ingredient) => Chip(
+                  label: Text(ingredient),
+                  onDeleted:
+                      () => setState(
+                        () => _selectedIngredients.remove(ingredient),
+                      ),
+                ),
+              )
+              .toList(),
+    );
+  }
+
+  Widget _buildRecetasEncontradas() {
+    if (_recetasEncontradas.isEmpty) return const SizedBox();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Ingredientes seleccionados:",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          "Recetas encontradas:",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         const SizedBox(height: 8),
-        if (_selectedIngredients.isNotEmpty)
-          Wrap(
-            spacing: 8,
-            children:
-                _selectedIngredients.map((ingredient) {
-                  return Chip(
-                    label: Text(ingredient),
-                    deleteIcon: const Icon(Icons.close),
-                    onDeleted: () {
-                      setState(() {
-                        _selectedIngredients.remove(ingredient);
-                      });
-                    },
-                  );
-                }).toList(),
-          )
-        else
-          const Text(
-            "No hay ingredientes seleccionados",
-            style: TextStyle(color: Colors.grey),
+        ..._recetasEncontradas.map(
+          (receta) => Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 4,
+            color: _recetaSeleccionada == receta ? Colors.amber.shade100 : null,
+            child: ListTile(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(
+                receta['titulo'] ?? '',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle:
+                  receta['faltantes'].isNotEmpty
+                      ? Text("Faltantes: ${receta['faltantes'].join(', ')}")
+                      : const Text("Todos los ingredientes disponibles"),
+              onTap: () {
+                setState(() {
+                  _recetaSeleccionada = receta;
+                  _initializeVideoPlayer(receta['video']);
+                });
+              },
+            ),
           ),
+        ),
       ],
     );
   }
 
-  // ✅ **Botón para buscar recetas**
-  Widget _buildSearchButton() {
-    return ElevatedButton(
-      onPressed: _searchMissingIngredients,
-      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-      child: const Text("Buscar Receta", style: TextStyle(color: Colors.white)),
+  Widget _buildVideoPlayer() {
+    if (_videoController == null) return const SizedBox();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.4,
+            child: YoutubePlayer(controller: _videoController!),
+          ),
+        ),
+      ),
     );
   }
 
-  // ✅ **Lista de ingredientes faltantes**
-  Widget _buildMissingIngredients() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_recetaEncontrada.isNotEmpty)
+  Widget _buildRecetaDetalle() {
+    if (_recetaSeleccionada == null) return const SizedBox();
+    final ingredientes = _recetaSeleccionada!['ingredientes'] ?? [];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            "Receta encontrada: $_recetaEncontrada",
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            "Receta: ${_recetaSeleccionada!['titulo']}",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
-        const SizedBox(height: 8),
-        if (_missingIngredients.isNotEmpty)
-          Wrap(
-            spacing: 8,
-            children:
-                _missingIngredients.map((ingredient) {
-                  return Chip(
-                    label: Text(ingredient),
-                    backgroundColor: Colors.redAccent,
-                  );
-                }).toList(),
-          )
-        else
+          const SizedBox(height: 8),
           const Text(
-            "Todos los ingredientes están presentes o no hay coincidencias.",
-            style: TextStyle(color: Colors.green),
+            "Ingredientes:",
+            style: TextStyle(fontWeight: FontWeight.w600),
           ),
-      ],
+          const SizedBox(height: 4),
+          ...ingredientes.map<Widget>((ing) => Text("- $ing")),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _videoController?.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Buscar Recetas")),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          transitionBuilder:
+              (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+          child:
+              _recetaSeleccionada == null
+                  ? Column(
+                    key: const ValueKey("filtros"),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDropdown(
+                        "Buscar por Receta",
+                        _availableRecipes,
+                        _selectedRecipe,
+                        (value) {
+                          setState(() {
+                            _selectedRecipe = value;
+                            _selectedRegion = null;
+                            _selectedIngredient = null;
+                            _selectedIngredients.clear();
+                          });
+                          _fetchRecipeDetails(value!);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildDropdown(
+                        "Buscar por Región",
+                        _availableRegions,
+                        _selectedRegion,
+                        (value) {
+                          setState(() => _selectedRegion = value);
+                          _fetchRecipesByRegion(value!);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildDropdown(
+                        "Seleccionar Ingrediente",
+                        _availableIngredients,
+                        _selectedIngredient,
+                        (value) {
+                          if (value != null &&
+                              !_selectedIngredients.contains(value)) {
+                            setState(() {
+                              _selectedIngredient = value;
+                              _selectedIngredients.add(value);
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildSelectedIngredientsChips(),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _searchMatchingRecipes,
+                        child: const Text("Buscar Recetas"),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedRecipe = null;
+                            _selectedRegion = null;
+                            _selectedIngredient = null;
+                            _selectedIngredients.clear();
+                            _recetasEncontradas.clear();
+                            _recetaSeleccionada = null;
+                            _videoController?.close();
+                            _videoController = null;
+                          });
+                        },
+                        child: const Text("Resetear Búsqueda"),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildRecetasEncontradas(),
+                    ],
+                  )
+                  : Column(
+                    key: const ValueKey("detalle"),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _recetaSeleccionada = null;
+                            _videoController?.close();
+                            _videoController = null;
+                          });
+                        },
+                        icon: const Icon(Icons.arrow_back),
+                        label: const Text("Volver"),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildVideoPlayer(),
+                      const SizedBox(height: 16),
+                      _buildRecetaDetalle(),
+                    ],
+                  ),
+        ),
+      ),
     );
   }
 }

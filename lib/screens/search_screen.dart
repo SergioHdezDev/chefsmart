@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -89,6 +90,7 @@ class _SearchScreenState extends State<SearchScreen> {
               : [];
 
       resultados.add({
+        "id": doc.id,
         "titulo": data["titulo"] ?? "Sin título",
         "video": data["video"] ?? "",
         "ingredientes": ingredientes,
@@ -124,6 +126,7 @@ class _SearchScreenState extends State<SearchScreen> {
               : [];
 
       resultados.add({
+        "id": doc.id,
         "titulo": data["titulo"] ?? "Sin título",
         "video": data["video"] ?? "",
         "ingredientes": ingredientes,
@@ -150,7 +153,8 @@ class _SearchScreenState extends State<SearchScreen> {
             .get();
 
     if (snapshot.docs.isNotEmpty) {
-      var data = snapshot.docs.first.data();
+      var doc = snapshot.docs.first;
+      var data = doc.data();
       List<String> ingredientes =
           data["ingredientes"] is List
               ? List<String>.from(data["ingredientes"])
@@ -158,6 +162,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
       setState(() {
         _recetaSeleccionada = {
+          "id": doc.id,
           "titulo": data["titulo"] ?? "Sin título",
           "video": data["video"] ?? "",
           "ingredientes": ingredientes,
@@ -330,6 +335,53 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  // Verifica si la receta ya es favorita
+  Future<bool> _isFavorito(String recetaId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+    final snapshot = await FirebaseFirestore.instance
+        .collection('favorito')
+        .where('idusuario', isEqualTo: user.uid)
+        .where('idreceta', isEqualTo: FirebaseFirestore.instance.doc('recetas/$recetaId'))
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
+
+  // Agrega a favoritos
+  Future<void> _agregarFavorito(String recetaId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    await FirebaseFirestore.instance.collection('favorito').add({
+      'idusuario': user.uid,
+      'idreceta': FirebaseFirestore.instance.doc('recetas/$recetaId'),
+      'fecha': DateTime.now(),
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Receta agregada a favoritos')),
+      );
+    }
+  }
+
+  // Elimina de favoritos
+  Future<void> _eliminarFavorito(String recetaId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final snapshot = await FirebaseFirestore.instance
+        .collection('favorito')
+        .where('idusuario', isEqualTo: user.uid)
+        .where('idreceta', isEqualTo: FirebaseFirestore.instance.doc('recetas/$recetaId'))
+        .get();
+    for (var doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Receta eliminada de favoritos')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _videoController?.close();
@@ -423,16 +475,48 @@ class _SearchScreenState extends State<SearchScreen> {
                     key: const ValueKey("detalle"),
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _recetaSeleccionada = null;
-                            _videoController?.close();
-                            _videoController = null;
-                          });
-                        },
-                        icon: const Icon(Icons.arrow_back),
-                        label: const Text("Volver"),
+                      Row(
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _recetaSeleccionada = null;
+                                _videoController?.close();
+                                _videoController = null;
+                              });
+                            },
+                            icon: const Icon(Icons.arrow_back),
+                            label: const Text("Volver"),
+                          ),
+                          const Spacer(),
+                          FutureBuilder<bool>(
+                            future: _isFavorito(_recetaSeleccionada!['id']),
+                            builder: (context, snapshot) {
+                              final isFav = snapshot.data ?? false;
+                              return Row(
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      isFav ? Icons.bookmark : Icons.bookmark_outline,
+                                      color: isFav ? Colors.amber : Colors.grey,
+                                    ),
+                                    onPressed: () async {
+                                      if (isFav) {
+                                        await _eliminarFavorito(_recetaSeleccionada!['id']);
+                                        setState(() {});
+                                      } else {
+                                        await _agregarFavorito(_recetaSeleccionada!['id']);
+                                        setState(() {});
+                                      }
+                                    },
+                                    tooltip: isFav ? 'Quitar de favoritos' : 'Agregar a favoritos',
+                                  ),
+                                  const Text('Favorito'),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       _buildVideoPlayer(),

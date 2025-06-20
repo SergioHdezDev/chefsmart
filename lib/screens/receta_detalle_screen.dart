@@ -1,6 +1,9 @@
+import 'package:chefsmart/core/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:chefsmart/data/models/receta_detail_response.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RecetaDetalleScreen extends StatefulWidget {
   final RecetaDetailResponse receta;
@@ -13,6 +16,7 @@ class RecetaDetalleScreen extends StatefulWidget {
 
 class _RecetaDetalleScreenState extends State<RecetaDetalleScreen> {
   YoutubePlayerController? _videoController;
+  bool _favoritoCambio = false; // Agrega esto en tu State
 
   @override
   void initState() {
@@ -94,6 +98,52 @@ class _RecetaDetalleScreenState extends State<RecetaDetalleScreen> {
     );
   }
 
+  Future<bool> _isFavorito(String recetaId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+    final snapshot = await FirebaseFirestore.instance
+        .collection('favorito')
+        .where('idusuario', isEqualTo: user.uid)
+        .where('idreceta', isEqualTo: FirebaseFirestore.instance.doc('recetas/$recetaId'))
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
+
+  Future<void> _agregarFavorito(String recetaId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    await FirebaseFirestore.instance.collection('favorito').add({
+      'idusuario': user.uid,
+      'idreceta': FirebaseFirestore.instance.doc('recetas/$recetaId'),
+      'fecha': DateTime.now(),
+    });
+    _favoritoCambio = true;
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Receta agregada a favoritos')),
+      );
+    }
+  }
+
+  Future<void> _eliminarFavorito(String recetaId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final snapshot = await FirebaseFirestore.instance
+        .collection('favorito')
+        .where('idusuario', isEqualTo: user.uid)
+        .where('idreceta', isEqualTo: FirebaseFirestore.instance.doc('recetas/$recetaId'))
+        .get();
+    for (var doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
+    _favoritoCambio = true;
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Receta eliminada de favoritos')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_videoController == null) {
@@ -102,7 +152,47 @@ class _RecetaDetalleScreenState extends State<RecetaDetalleScreen> {
 
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.receta.titulo)),
+      appBar: AppBar(
+        title: Text(widget.receta.titulo),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context, _favoritoCambio);
+          },
+        ),
+        actions: [
+          FutureBuilder<bool>(
+            future: _isFavorito(widget.receta.id),
+            builder: (context, snapshot) {
+              final isFav = snapshot.data ?? false;
+              return Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      isFav ? Icons.bookmark : Icons.bookmark_outline,
+                      color: AppColors.primary,
+                    ),
+                    onPressed: () async {
+                      if (isFav) {
+                        await _eliminarFavorito(widget.receta.id);
+                        setState(() {});
+                      } else {
+                        await _agregarFavorito(widget.receta.id);
+                        setState(() {});
+                      }
+                    },
+                    tooltip: isFav ? 'Quitar de favoritos' : 'Agregar a favoritos',
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(right: 12.0),
+                    child: Text('Favorito', style: TextStyle(color:AppColors.primary)),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

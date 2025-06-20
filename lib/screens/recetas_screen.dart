@@ -6,9 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:chefsmart/data/recetas_repository.dart';
 import 'package:chefsmart/data/models/receta_detail_response.dart';
 
-class RecetasScreen extends StatelessWidget {
+class RecetasScreen extends StatefulWidget {
   const RecetasScreen({super.key});
 
+  @override
+  State<RecetasScreen> createState() => _RecetasScreenState();
+}
+
+class _RecetasScreenState extends State<RecetasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,15 +99,19 @@ class RecetasScreen extends StatelessWidget {
   }
 
   // Card de receta popular
-  static Widget _popularRecipeCard(BuildContext context, RecetaDetailResponse receta) {
+  Widget _popularRecipeCard(BuildContext context, RecetaDetailResponse receta) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => RecetaDetalleScreen(receta: receta),
+            builder: (context) => RecetaDetalleScreen(receta: receta),
           ),
         );
+        if (result == true) {
+          // Aquí recargas tus favoritos
+          setState(() {});
+        }
       },
       child: SizedBox(
         width: 160,
@@ -126,7 +135,7 @@ class RecetasScreen extends StatelessWidget {
   }
 
   // Tile de nueva receta
-  static Widget _newRecipeTile(BuildContext context, RecetaDetailResponse receta) {
+  Widget _newRecipeTile(BuildContext context, RecetaDetailResponse receta) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Card(
@@ -142,13 +151,17 @@ class RecetasScreen extends StatelessWidget {
             receta.region,
             style: const TextStyle(color: Colors.grey),
           ),
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => RecetaDetalleScreen(receta: receta),
               ),
             );
+            if (result == true) {
+              // Aquí recargas tus favoritos
+              setState(() {});
+            }
           },
         ),
       ),

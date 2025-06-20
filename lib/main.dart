@@ -4,10 +4,7 @@ import 'firebase_options.dart';
 import 'package:chefsmart/screens/login_screen.dart';
 import 'package:chefsmart/screens/home_screen.dart';
 import 'package:chefsmart/firestore_service.dart'; // ✅ Importamos FirestoreService
-import 'package:chefsmart/firestore_service.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

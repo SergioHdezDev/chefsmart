@@ -1,4 +1,6 @@
 import 'package:chefsmart/core/app_colors.dart';
+import 'package:chefsmart/data/models/rectas_response.dart';
+import 'package:chefsmart/youtube_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:chefsmart/data/recetas_repository.dart';
 import 'package:chefsmart/data/models/receta_detail_response.dart';
@@ -12,8 +14,11 @@ class RecetasScreen extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: FutureBuilder(
-            future: RecetasRepository().fetchRecetas(),
+          child: FutureBuilder<List<RecetasResponse>>(
+            future: Future.wait([
+               RecetasRepository().fetchRecetasPopulares(),
+               RecetasRepository().fetchRecetasNuevas()
+            ]),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -21,11 +26,9 @@ class RecetasScreen extends StatelessWidget {
               if (snapshot.hasError) {
                 return Center(child: Text('Error: ${snapshot.error}'));
               }
-              final recetas = snapshot.data?.recetas ?? [];
-
-              // Filtra populares y nuevas
-              final populares = recetas.where((r) => r.populares == true).toList();
-              final nuevas = recetas.where((r) => r.nuevo == true).toList();
+              final recetasPopulares = snapshot.data?[0].recetas ?? [];
+              final nuevas = snapshot.data?[1].recetas ?? [];
+              
 
               return ListView(
                 children: [
@@ -70,14 +73,14 @@ class RecetasScreen extends StatelessWidget {
                     height: 180,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: populares.length,
+                      itemCount: recetasPopulares.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 16),
                       itemBuilder: (context, index) {
-                        final receta = populares[index];
+                        final receta = recetasPopulares[index];
                         return _popularRecipeCard(
-                          receta.nombre,
+                          receta.titulo,
                           receta.region,
-                          receta.imagenes,
+                          YouTubeThumbnail.getThumbnail(receta.video),
                         );
                       },
                     ),
@@ -90,10 +93,9 @@ class RecetasScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   ...nuevas.map((receta) => _newRecipeTile(
-                        receta.nombre,
+                        receta.titulo,
                         receta.region,
-                        receta.imagenes,
-                      )),
+                        YouTubeThumbnail.getThumbnail(receta.video))),
                 ],
               );
             },
@@ -119,7 +121,7 @@ class RecetasScreen extends StatelessWidget {
   }
 
   // Card de receta popular
-  static Widget _popularRecipeCard(String title, List<String> regiones, List<String> imagenes) {
+  static Widget _popularRecipeCard(String title, String region, String imagen) {
     return SizedBox(
       width: 160,
       child: Column(
@@ -127,19 +129,13 @@ class RecetasScreen extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: imagenes.isNotEmpty
-                ? Image.network(imagenes.first.trim(), height: 100, width: 160, fit: BoxFit.cover)
-                : Container(
-                    height: 100,
-                    width: 160,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.image_not_supported),
-                  ),
+            child: Image.network(imagen, height: 100, width: 160, fit: BoxFit.cover)
+                
           ),
           const SizedBox(height: 8),
           Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           Text(
-            regiones.join(', '),
+            region,
             style: const TextStyle(color: Colors.grey),
           ),
         ],
@@ -148,21 +144,15 @@ class RecetasScreen extends StatelessWidget {
   }
 
   // Tile de nueva receta
-  static Widget _newRecipeTile(String title, List<String> regiones, List<String> imagenes) {
+  static Widget _newRecipeTile(String title, String region, String imagen) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: imagenes.isNotEmpty
-                ? Image.network(imagenes.first.trim(), height: 48, width: 48, fit: BoxFit.cover)
-                : Container(
-                    height: 48,
-                    width: 48,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.image_not_supported),
-                  ),
+            child:  Image.network(imagen, height: 48, width: 48, fit: BoxFit.cover)
+                
           ),
           const SizedBox(width: 16),
           Column(
@@ -170,7 +160,7 @@ class RecetasScreen extends StatelessWidget {
             children: [
               Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
               Text(
-                regiones.join(', '),
+                region,
                 style: const TextStyle(color: Colors.grey),
               ),
             ],

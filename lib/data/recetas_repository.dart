@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:chefsmart/data/models/receta_detail_response.dart';
 import 'package:chefsmart/data/models/rectas_response.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RecetasRepository {
   Future<RecetasResponse> fetchRecetas() async {
@@ -70,5 +71,36 @@ class RecetasRepository {
     );
   }
 
+  Future<RecetasResponse> fetchRecetasFavoritas() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      // Si no hay usuario autenticado, retorna lista vacía
+      return RecetasResponse(recetas: []);
+    }
+    final idUsuario = user.uid;
 
+    final snapshot = await FirebaseFirestore.instance
+        .collection('favorito')
+        .where('idusuario', isEqualTo: idUsuario)
+        .get();
+
+    final List<RecetaDetailResponse> recetasFavoritas = [];
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final recetaRef = data['idreceta'];
+      if (recetaRef is DocumentReference) {
+        final recetaSnapshot = await recetaRef.get();
+        if (recetaSnapshot.exists) {
+          final recetaData = recetaSnapshot.data() as Map<String, dynamic>;
+          recetasFavoritas.add(RecetaDetailResponse.fromJson({
+            ...recetaData,
+            'id': recetaSnapshot.id,
+          }));
+        }
+      }
+    }
+
+    return RecetasResponse(recetas: recetasFavoritas);
+  }
 }

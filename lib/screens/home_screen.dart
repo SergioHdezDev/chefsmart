@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:chefsmart/screens/recetas_screen.dart'; // Importa la pantalla de Recetas
 
 // Asegúrate de tener estas imágenes en tu carpeta assets/images/
 // 'assets/images/fondo_home.jpg'
@@ -8,7 +7,18 @@ import 'package:chefsmart/screens/recetas_screen.dart'; // Importa la pantalla d
 // ... y las demás imágenes de categorías
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onRegionTap;
+  const HomeScreen({super.key, this.onRegionTap});
+
+  // Define las categorías fuera del builder
+  static final List<Map<String, String>> categories = [
+    {'name': 'Caribe', 'image': 'assets/images/caribe.jpg'},
+    {'name': 'Andina', 'image': 'assets/images/andina.jpg'},
+    {'name': 'Pacífica', 'image': 'assets/images/pacifica.jpg'},
+    {'name': 'Insular', 'image': 'assets/images/insular.jpg'},
+    {'name': 'Orinoquia', 'image': 'assets/images/orinoquia.jpg'},
+    {'name': 'Amazonia', 'image': 'assets/images/amazonia.jpg'},
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -18,10 +28,7 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -43,8 +50,15 @@ class HomeScreen extends StatelessWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.broken_image, size: 50, color: Colors.grey),
-                              Text('Error fondo_home.jpg', style: TextStyle(color: Colors.grey)),
+                              Icon(
+                                Icons.broken_image,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
+                              Text(
+                                'Error fondo_home.jpg',
+                                style: TextStyle(color: Colors.grey),
+                              ),
                             ],
                           ),
                         ),
@@ -119,9 +133,7 @@ class HomeScreen extends StatelessWidget {
 
             // Sección "Descubre" y categorías (fondo blanco)
             Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-              ),
+              decoration: const BoxDecoration(color: Colors.white),
               padding: const EdgeInsets.fromLTRB(20.0, 0.0, 20.0, 20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -140,34 +152,20 @@ class HomeScreen extends StatelessWidget {
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 15.0,
-                      mainAxisSpacing: 15.0,
-                      childAspectRatio: 1.2,
-                    ),
-                    itemCount: 6,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 15.0,
+                          mainAxisSpacing: 15.0,
+                          childAspectRatio: 1.2,
+                        ),
+                    itemCount: categories.length,
                     itemBuilder: (context, index) {
-                      final List<Map<String, String>> categories = [
-                        {'name': 'Caribe', 'image': 'assets/images/caribe.jpg'},
-                        {'name': 'Andina', 'image': 'assets/images/andina.jpg'},
-                        {'name': 'Pacífica', 'image': 'assets/images/pacifica.jpg'},
-                        {'name': 'Insular', 'image': 'assets/images/insular.jpg'},
-                        {'name': 'Orinoquia', 'image': 'assets/images/orinoquia.jpg'},
-                        {'name': 'Amazonia', 'image': 'assets/images/amazonia.jpg'},
-                      ];
                       final category = categories[index];
-
-                      return CategoryCard( // Pasa el contexto para la navegación
+                      return CategoryCard(
                         name: category['name']!,
                         imagePath: category['image']!,
-                        onTap: () {
-                          // Navega a RecetasScreen al hacer clic
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const RecetasScreen()),
-                          );
-                        },
+                        onTap: onRegionTap ?? () {}, // Solución aquí
                       );
                     },
                   ),
@@ -186,7 +184,7 @@ class HomeScreen extends StatelessWidget {
 class CategoryCard extends StatefulWidget {
   final String name;
   final String imagePath;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const CategoryCard({
     super.key,
@@ -200,18 +198,27 @@ class CategoryCard extends StatefulWidget {
 }
 
 class _CategoryCardState extends State<CategoryCard> {
-  bool _isHovering = false; // Estado para controlar si el cursor está sobre la tarjeta
+  bool _isHovering =
+      false; // Estado para controlar si el cursor está sobre la tarjeta
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion( // Detecta la entrada y salida del cursor
+    return MouseRegion(
+      // Detecta la entrada y salida del cursor
       onEnter: (event) => setState(() => _isHovering = true),
       onExit: (event) => setState(() => _isHovering = false),
-      child: GestureDetector( // Detecta el clic (tap)
-        onTap: widget.onTap, // Usa el onTap proporcionado por el padre
-        child: AnimatedScale( // Anima la escala de la tarjeta
-          scale: _isHovering ? 1.05 : 1.0, // Escala a 1.05 si está en hover, sino 1.0
-          duration: const Duration(milliseconds: 200), // Duración de la animación
+      child: GestureDetector(
+        // Detecta el clic (tap)
+        onTap: widget.onTap ?? () {}, // Llama solo si no es nulo
+        child: AnimatedScale(
+          // Anima la escala de la tarjeta
+          scale:
+              _isHovering
+                  ? 1.05
+                  : 1.0, // Escala a 1.05 si está en hover, sino 1.0
+          duration: const Duration(
+            milliseconds: 200,
+          ), // Duración de la animación
           curve: Curves.easeOut, // Curva de la animación
           child: Card(
             elevation: _isHovering ? 8 : 4, // Aumenta la sombra al hacer hover
@@ -233,10 +240,17 @@ class _CategoryCardState extends State<CategoryCard> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.broken_image, size: 30, color: Colors.grey),
+                              Icon(
+                                Icons.broken_image,
+                                size: 30,
+                                color: Colors.grey,
+                              ),
                               Text(
                                 'Error: ${widget.name}', // Usa widget.name
-                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -247,7 +261,10 @@ class _CategoryCardState extends State<CategoryCard> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 8.0,
+                  ),
                   child: Text(
                     widget.name, // Usa widget.name
                     textAlign: TextAlign.center,

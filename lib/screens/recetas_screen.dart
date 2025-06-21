@@ -1,4 +1,3 @@
-import 'package:chefsmart/core/app_colors.dart';
 import 'package:chefsmart/data/models/rectas_response.dart';
 import 'package:chefsmart/screens/receta_detalle_screen.dart';
 import 'package:chefsmart/youtube_thumbnail.dart';
@@ -83,20 +82,6 @@ class _RecetasScreenState extends State<RecetasScreen> {
     );
   }
 
-  // Botón de región
-  static Widget _regionButton(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-      decoration: BoxDecoration(
-        color: AppColors.secondary,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppColors.accent),
-      ),
-    );
-  }
 
   // Card de receta popular
   Widget _popularRecipeCard(BuildContext context, RecetaDetailResponse receta) {

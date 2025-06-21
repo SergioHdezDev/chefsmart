@@ -15,7 +15,7 @@ class _SearchScreenState extends State<SearchScreen> {
   List<String> _availableRecipes = [];
   List<String> _availableRegions = [];
   List<String> _availableIngredients = [];
-  List<String> _selectedIngredients = [];
+  final List<String> _selectedIngredients = [];
   String? _selectedRecipe;
   String? _selectedRegion;
   String? _selectedIngredient;
